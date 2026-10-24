@@ -1,11 +1,33 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "react-router";
-import { router } from "./routes";
-import "./index.css";
+import { createBrowserRouter } from "react-router";
+import Layout from "./components/Layout";
+import Home from "./pages/Home";
+import Shop from "./pages/Shop";
+import Product from "./pages/Product";
+import Contact from "./pages/Contact";
+import Checkout from "./pages/Checkout";
+import Analytics from "./pages/Analytics";
+import AdminProducts from "./pages/AdminProducts";
+import MyOrders from "./pages/MyProducts";
+import NotFound from "./pages/NotFound";
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>
+// main.tsx:  <RouterProvider router={router} />
+export const router = createBrowserRouter(
+  [
+    {
+      element: <Layout />,
+      children: [
+        { path: "/", element: <Home /> },
+        { path: "/shop", element: <Shop /> },
+        { path: "/shop/:itemId", element: <Product /> },
+        { path: "/contact", element: <Contact /> },
+        { path: "/checkout", element: <Checkout /> },
+        { path: "/orders", element: <MyOrders /> },
+        { path: "/analytics", element: <Analytics /> },
+        { path: "/admin/products", element: <AdminProducts /> },
+        { path: "*", element: <NotFound /> },
+      ],
+    },
+  ],
+  // "/do-dep-cho-be/" on GitHub Pages, "/" locally; no trailing slash
+  { basename: import.meta.env.BASE_URL.replace(/\/$/, "") }
 );

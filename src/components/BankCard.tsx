@@ -6,12 +6,11 @@ import { vnd } from "../lib/types";
 export default function BankCard({ amount, memo }: { amount: number; memo?: string }) {
   const [useStatic, setUseStatic] = useState(false);
   const qr = useStatic
-    ? "/qr.png"
+    ? `${import.meta.env.BASE_URL}qr.png`
     : `https://img.vietqr.io/image/${BANK.bankCode}-${BANK.accountNo}-compact2.png?amount=${Math.round(
-        amount
-      )}&accountName=${encodeURIComponent(BANK.accountName)}${
-        memo ? `&addInfo=${encodeURIComponent(memo)}` : ""
-      }`;
+      amount
+    )}&accountName=${encodeURIComponent(BANK.accountName)}${memo ? `&addInfo=${encodeURIComponent(memo)}` : ""
+    }`;
 
   const Row = ({ k, v }: { k: string; v: string }) => (
     <div className="flex justify-between gap-4 py-1.5 text-sm">
@@ -19,7 +18,7 @@ export default function BankCard({ amount, memo }: { amount: number; memo?: stri
       <button
         type="button"
         className="font-medium text-right cursor-pointer hover:underline"
-        title="Nhấn để sao chép"
+        title="Click to copy"
         onClick={() => navigator.clipboard?.writeText(v)}
       >
         {v}
@@ -31,17 +30,17 @@ export default function BankCard({ amount, memo }: { amount: number; memo?: stri
     <div className="border border-border rounded-lg p-4 flex flex-col sm:flex-row gap-4 bg-surface">
       <img
         src={qr}
-        alt="Mã QR chuyển khoản ngân hàng"
+        alt="Bank transfer QR code"
         onError={() => setUseStatic(true)}
         className="w-44 h-44 object-contain self-center rounded bg-white border border-border"
       />
       <div className="flex-1">
-        <Row k="Ngân hàng" v={BANK.bankName} />
-        <Row k="Số tài khoản" v={BANK.accountNo} />
-        <Row k="Chủ tài khoản" v={BANK.accountName} />
-        <Row k="Số tiền" v={vnd(amount)} />
-        <Row k="Nội dung chuyển khoản" v={memo ?? "(hiển thị sau khi bạn đặt hàng)"} />
-        <p className="text-xs text-text/50 mt-2">Nhấn vào giá trị để sao chép.</p>
+        <Row k="Bank" v={BANK.bankName} />
+        <Row k="Account no." v={BANK.accountNo} />
+        <Row k="Account name" v={BANK.accountName} />
+        <Row k="Amount" v={vnd(amount)} />
+        <Row k="Transfer note" v={memo ?? "(shown after you place the order)"} />
+        <p className="text-xs text-text/50 mt-2">Click a value to copy it.</p>
       </div>
     </div>
   );
