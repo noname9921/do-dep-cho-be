@@ -28,10 +28,6 @@ const LIMITED_AT = 5; // "limited" = 1..5 units left
 const MAX_LIMITED = 4;
 const MAX_BRANDS = 24;
 
-const Placeholder = ({ className = "" }: { className?: string }) => (
-  <div className={`bg-gray-300 rounded-md ${className}`} />
-);
-
 const Stars = ({ n }: { n: number }) => (
   <p className="text-accent text-lg" role="img" aria-label={`${n} trên 5 sao`}>
     {"★".repeat(n)}
@@ -118,7 +114,6 @@ export default function Home() {
             <Link to="/contact" className="px-5 py-3 rounded-md border border-border hover:bg-surface-hover">Liên hệ</Link>
           </div>
         </div>
-        <Placeholder className="aspect-[4/3]" />
       </section>
 
       {/* on sale */}
