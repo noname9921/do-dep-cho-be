@@ -1,0 +1,34 @@
+/* src/index.css  (Tailwind v4) */
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+
+  /* tokens used by the components: bg-background, bg-surface, text-text, border-border, ... */
+  --color-background: #fdf6f3;
+  --color-surface: #ffffff;
+  --color-surface-hover: #faf0ec;
+  --color-surface-muted: #f3e6e0;
+  --color-border: #ead9d1;
+  --color-text: #2b2220;
+  --color-primary: #e0707e;
+  --color-accent: #f6c667;
+  --color-success: #2e9e6b;
+  --color-danger: #d64545;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-text font-sans antialiased;
+  }
+
+  button:not(:disabled),
+  [role="button"] {
+    cursor: pointer;
+  }
+}
