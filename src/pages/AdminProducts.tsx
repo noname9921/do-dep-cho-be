@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminGate from "../components/AdminGate";
+import BulkBar from "../components/BulkBar";
+import ExportDialog from "../components/ExportDialog";
+import ImportDialog from "../components/ImportDialog";
 import { invalidateItems, itemToRow, rowToItem } from "../lib/items";
 import { supabase } from "../lib/supabase";
 import { fold, percentOff, vnd, type Color, type Item, type Size, type Variant } from "../lib/types";
@@ -409,6 +412,8 @@ function Manager() {
   const [sort, setSort] = useState("id");
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<{ item: Item; isNew: boolean } | null>(null);
+  const [sel, setSel] = useState<Set<number>>(new Set());   // ticked products (kept across pages and filters)
+  const [dlg, setDlg] = useState<"import" | "export" | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -451,6 +456,10 @@ function Manager() {
   const view = shown.slice(page * PAGE, page * PAGE + PAGE);
   useEffect(() => { setPage(0); }, [q, filter, saleF, brandF, catF, sort]);
 
+  const pageAllSelected = view.length > 0 && view.every((r) => sel.has(r.id));
+  const toggleRow = (id: number) => setSel((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const togglePage = () => setSel((prev) => { const n = new Set(prev); view.forEach((r) => (pageAllSelected ? n.delete(r.id) : n.add(r.id))); return n; });
+
   async function fetchFull(id: number): Promise<Item | null> {
     const { data, error } = await supabase!.from("products").select("*").eq("id", id).single();
     if (error) { setErr(error.message); return null; }
@@ -472,7 +481,7 @@ function Manager() {
     if (!confirm(`Xóa vĩnh viễn “${r.name}”? Các đơn hàng cũ vẫn giữ bản sao thông tin của riêng chúng.`)) return;
     const { error } = await supabase!.from("products").delete().eq("id", r.id);
     if (error) { setErr(error.message); return; }
-    invalidateItems(); setNotice(`Đã xóa “${r.name}”`); load();
+    invalidateItems(); setNotice(`Đã xóa “${r.name}”`); setSel((prev) => { const n = new Set(prev); n.delete(r.id); return n; }); load();
   }
   async function toggle(r: Row, col: "is_new" | "is_bestseller") {
     const { error } = await supabase!.from("products").update({ [col]: !r[col] }).eq("id", r.id);
@@ -486,6 +495,8 @@ function Manager() {
         <h1 className="font-bold text-4xl">Sản phẩm</h1>
         <div className="flex gap-2">
           <button className={btnPrimary} onClick={() => setEditing({ item: blankItem(nextId), isNew: true })}>+ Sản phẩm mới</button>
+          <button className={btn} onClick={() => setDlg("import")}>⇧ Nhập dữ liệu</button>
+          <button className={btn} onClick={() => setDlg("export")}>⇩ Xuất dữ liệu</button>
           <button className={btn} onClick={() => supabase!.auth.signOut()}>Đăng xuất</button>
         </div>
       </div>
@@ -518,16 +529,32 @@ function Manager() {
         </div>
       </div>
 
+      {sel.size > 0 && (
+        <BulkBar
+          ids={[...sel]}
+          onClear={() => setSel(new Set())}
+          onError={setErr}
+          onDone={(msg) => { setNotice(msg); setErr(""); load(); }}
+        />
+      )}
+      {pageAllSelected && shown.length > view.length && sel.size < shown.length && (
+        <p className="text-sm">
+          Đã chọn {view.length} sản phẩm trên trang này.{" "}
+          <button type="button" className="text-primary hover:underline cursor-pointer" onClick={() => setSel(new Set(shown.map((r) => r.id)))}>Chọn tất cả {shown.length} sản phẩm</button>
+        </p>
+      )}
+
       <div className="bg-surface border border-border rounded-lg overflow-x-auto">
         <table className="w-full min-w-[64rem] text-sm [&_th]:px-4 [&_td]:px-4 [&_th]:py-4 [&_td]:py-4">
           <thead className="text-left text-text/60">
-            <tr><th className="px-4 py-4 font-medium">Sản phẩm</th><th className="px-4 py-4 font-medium">Thương hiệu</th><th className="px-4 py-4 font-medium">Giá</th><th className="px-4 py-4 font-medium">Giảm giá</th><th className="px-4 py-4 font-medium text-right">Tồn kho</th><th className="px-4 py-4 font-medium text-center">Mới</th><th className="px-4 py-4 font-medium text-center">Bán chạy</th><th className="px-4 py-4" /></tr>
+            <tr><th className="px-4 py-4"><input type="checkbox" className="size-4 cursor-pointer" checked={pageAllSelected} onChange={togglePage} aria-label="Chọn tất cả trên trang" /></th><th className="px-4 py-4 font-medium">Sản phẩm</th><th className="px-4 py-4 font-medium">Thương hiệu</th><th className="px-4 py-4 font-medium">Giá</th><th className="px-4 py-4 font-medium">Giảm giá</th><th className="px-4 py-4 font-medium text-right">Tồn kho</th><th className="px-4 py-4 font-medium text-center">Mới</th><th className="px-4 py-4 font-medium text-center">Bán chạy</th><th className="px-4 py-4" /></tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={8} className="p-4 text-text/60">Đang tải…</td></tr>}
-            {!loading && view.length === 0 && <tr><td colSpan={8} className="p-4 text-text/60">Không tìm thấy sản phẩm nào.</td></tr>}
+            {loading && <tr><td colSpan={9} className="p-4 text-text/60">Đang tải…</td></tr>}
+            {!loading && view.length === 0 && <tr><td colSpan={9} className="p-4 text-text/60">Không tìm thấy sản phẩm nào.</td></tr>}
             {view.map((r) => (
-              <tr key={r.id} className="border-t border-border align-middle">
+              <tr key={r.id} className={`border-t border-border align-middle ${sel.has(r.id) ? "bg-surface-muted/50" : ""}`}>
+                <td className="px-4 py-4"><input type="checkbox" className="size-4 cursor-pointer" checked={sel.has(r.id)} onChange={() => toggleRow(r.id)} aria-label={`Chọn ${r.name ?? r.id}`} /></td>
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-4 min-w-[18rem]">
                     <div className="size-10 shrink-0 rounded bg-gray-300 overflow-hidden">
@@ -561,6 +588,13 @@ function Manager() {
         <span>Trang {page + 1} / {pages}</span>
         <button className={btn} disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>Sau ›</button>
       </div>
+
+      {dlg === "export" && (
+        <ExportDialog all={rows.map((r) => r.id)} filtered={shown.map((r) => r.id)} selected={[...sel]} onClose={() => setDlg(null)} />
+      )}
+      {dlg === "import" && (
+        <ImportDialog onClose={() => setDlg(null)} onDone={(msg) => { setDlg(null); setNotice(msg); setErr(""); load(); }} />
+      )}
 
       {editing && (
         <Editor
